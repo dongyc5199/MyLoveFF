@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宠物叫声识别与回应系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .record-section {
+            text-align: center;
+        }
+
+        .record-btn {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255,107,107,0.3);
+            margin: 20px 0;
+        }
+
+        .record-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(255,107,107,0.4);
+        }
+
+        .record-btn.recording {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 60px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wave-bar {
+            width: 3px;
+            height: 20px;
+            background: #667eea;
+            margin: 0 2px;
+            border-radius: 2px;
+            animation: wave 1s infinite ease-in-out;
+        }
+
+        @keyframes wave {
+            0%, 100% { height: 20px; }
+            50% { height: 40px; }
+        }
+
+        .pet-info {
+            margin-bottom: 20px;
+        }
+
+        .pet-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .pet-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .pet-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea20, #764ba220);
+        }
+
+        .pet-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .pet-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pet-type {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .add-pet-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .add-pet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102,126,234,0.3);
+        }
+
+        .recognition-result {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .response-section {
+            margin-top: 20px;
+        }
+
+        .response-card {
+            background: linear-gradient(135deg, #667eea10, #764ba210);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #667eea30;
+        }
+
+        .response-type {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .response-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .play-response-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .play-response-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-1px);
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: #f8f9fa;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐾 宠物叫声识别与回应系统</h1>
+            <p>智能识别您的宠物叫声，提供专业的回应建议</p>
+        </div>
+
+        <div class="main-content">
+            <div class="card">
+                <h2>🎤 录音识别</h2>
+                <div class="record-section">
+                    <button class="record-btn" id="recordBtn">
+                        <span id="recordText">点击录音</span>
+                    </button>
+                    <div class="audio-visualizer" id="visualizer" style="display: none;">
+                        <div class="wave-bar" style="animation-delay: 0s;"></div>
+                        <div class="wave-bar" style="animation-delay: 0.1s;"></div>
+                        <div class="wave-bar" style="animation-delay: 0.2s;"></div>
+                        <div class="wave-bar" style="animation-delay: 0.3s;"></div>
+                        <div class="wave-bar" style="animation-delay: 0.4s;"></div>
+                        <div class="wave-bar" style="animation-delay: 0.5s;"></div>
+                    </div>
+                    <p id="recordingStatus">准备录音...</p>
+                </div>
+
+                <div class="recognition-result" id="recognitionResult" style="display: none;">
+                    <div class="result-item">
+                        <div class="result-label">识别结果</div>
+                        <div id="recognitionText">猫咪饿了的叫声</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">置信度</div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" id="confidenceBar" style="width: 0%;"></div>
+                        </div>
+                        <div id="confidenceText">0%</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">宠物情绪</div>
+                        <div id="petEmotion">饥饿</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>🐕 我的宠物</h2>
+                <div class="pet-info" id="petInfo">
+                    <div class="pet-card selected" data-pet-id="1">
+                        <h3>小白</h3>
+                        <div class="pet-details">
+                            <span>2岁 · 雄性</span>
+                            <span class="pet-type">猫咪</span>
+                        </div>
+                    </div>
+                    <div class="pet-card" data-pet-id="2">
+                        <h3>大黄</h3>
+                        <div class="pet-details">
+                            <span>3岁 · 雌性</span>
+                            <span class="pet-type">狗狗</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="add-pet-btn" id="addPetBtn">+ 添加宠物</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💬 智能回应建议</h2>
+            <div class="response-section" id="responseSection">
+                <div class="response-card">
+                    <div class="response-type">🍽️ 喂食建议</div>
+                    <div class="response-text">根据小白的叫声分析，它现在可能饿了。建议立即给予适量的猫粮，注意观察进食情况。</div>
+                    <button class="play-response-btn" onclick="playResponse('feeding')">播放语音回应</button>
+                </div>
+                <div class="response-card">
+                    <div class="response-type">🎾 互动建议</div>
+                    <div class="response-text">可以用逗猫棒或玩具与小白互动，这样有助于缓解它的焦虑情绪。</div>
+                    <button class="play-response-btn" onclick="playResponse('play')">播放语音回应</button>
+                </div>
+                <div class="response-card">
+                    <div class="response-type">🏥 健康提醒</div>
+                    <div class="response-text">如果叫声持续且异常，建议观察宠物的其他行为表现，必要时咨询兽医。</div>
+                    <button class="play-response-btn" onclick="playResponse('health')">播放语音回应</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-card">
+                <h2>📊 识别历史</h2>
+                <div id="historyList">
+                    <div class="history-item">
+                        <div>
+                            <strong>小白 - 饿了的叫声</strong>
+                            <div class="history-time">2024-01-15 14:30</div>
+                        </div>
+                        <div>置信度: 92%</div>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <strong>大黄 - 想出去玩</strong>
+                            <div class="history-time">2024-01-15 10:15</div>
+                        </div>
+                        <div>置信度: 87%</div>
+                    </div>
+                    <div class="history-item">
+                        <div>
+                            <strong>小白 - 撒娇的叫声</strong>
+                            <div class="history-time">2024-01-14 18:45</div>
+                        </div>
+                        <div>置信度: 94%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-indicator"></div>
+        <span>系统运行正常</span>
+    </div>
+
+    <!-- 添加宠物模态框 -->
+    <div class="modal" id="petModal">
+        <div class="modal-content">
+            <h2>添加新宠物</h2>
+            <form id="petForm">
+                <div class="form-group">
+                    <label for="petName">宠物名称</label>
+                    <input type="text" id="petName" required>
+                </div>
+                <div class="form-group">
+                    <label for="petType">宠物类型</label>
+                    <select id="petType" required>
+                        <option value="">请选择</option>
+                        <option value="cat">猫咪</option>
+                        <option value="dog">狗狗</option>
+                        <option value="bird">鸟类</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="petAge">年龄</label>
+                    <input type="number" id="petAge" min="0" max="30" required>
+                </div>
+                <div class="form-group">
+                    <label for="petGender">性别</label>
+                    <select id="petGender" required>
+                        <option value="">请选择</option>
+                        <option value="male">雄性</option>
+                        <option value="female">雌性</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="closePetModal()">取消</button>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let selectedPetId = 1;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // 绑定事件
+            document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+            document.getElementById('addPetBtn').addEventListener('click', openPetModal);
+            document.getElementById('petForm').addEventListener('submit', addPet);
+            
+            // 绑定宠物选择事件
+            document.querySelectorAll('.pet-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectPet(this.dataset.petId);
+                });
+            });
+        }
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = function(event) {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = function() {
+                    const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+                    processAudioRecording(blob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                
+                // 更新UI
+                const recordBtn = document.getElementById('recordBtn');
+                const recordText = document.getElementById('recordText');
+                const recordingStatus = document.getElementById('recordingStatus');
+                const visualizer = document.getElementById('visualizer');
+                
+                recordBtn.classList.add('recording');
+                recordText.textContent = '停止录音';
+                recordingStatus.textContent = '正在录音...';
+                visualizer.style.display = 'flex';
+                
+            } catch (error) {
+                console.error('录音失败:', error);
+                alert('录音失败，请检查麦克风权限');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+            
+            isRecording = false;
+            
+            // 更新UI
+            const recordBtn = document.getElementById('recordBtn');
+            const recordText = document.getElementById('recordText');
+            const recordingStatus = document.getElementById('recordingStatus');
+            const visualizer = document.getElementById('visualizer');
+            
+            recordBtn.classList.remove('recording');
+            recordText.textContent = '点击录音';
+            recordingStatus.textContent = '正在分析...';
+            visualizer.style.display = 'none';
+        }
+
+        function processAudioRecording(audioBlob) {
+            // 模拟音频处理和识别
+            setTimeout(() => {
+                const results = [
+                    { text: '猫咪饿了的叫声', confidence: 92, emotion: '饥饿' },
+                    { text: '狗狗想出去玩', confidence: 87, emotion: '兴奋' },
+                    { text: '猫咪撒娇的叫声', confidence: 94, emotion: '撒娇' },
+                    { text: '鸟类求偶叫声', confidence: 78, emotion: '求偶' }
+                ];
+                
+                const randomResult = results[Math.floor(Math.random() * results.length)];
+                displayRecognitionResult(randomResult);
+                addToHistory(randomResult);
+                
+                document.getElementById('recordingStatus').textContent = '识别完成';
+            }, 2000);
+        }
+
+        function displayRecognitionResult(result) {
+            const resultDiv = document.getElementById('recognitionResult');
+            const recognitionText = document.getElementById('recognitionText');
+            const confidenceBar = document.getElementById('confidenceBar');
+            const confidenceText = document.getElementById('confidenceText');
+            const petEmotion = document.getElementById('petEmotion');
+            
+            recognitionText.textContent = result.text;
+            confidenceBar.style.width = result.confidence + '%';
+            confidenceText.textContent = result.confidence + '%';
+            petEmotion.textContent = result.emotion;
+            
+            resultDiv.style.display = 'block';
+            
+            // 添加动画效果
+            setTimeout(() => {
+                confidenceBar.style.width = result.confidence + '%';
+            }, 300);
+        }
+
+        function selectPet(petId) {
+            selectedPetId = petId;
+            document.querySelectorAll('.pet-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-pet-id="${petId}"]`).classList.add('selected');
+        }
+
+        function openPetModal() {
+            document.getElementById('petModal').style.display = 'block';
+        }
+
+        function closePetModal() {
+            document.getElementById('petModal').style.display = 'none';
+            document.getElementById('petForm').reset();
+        }
+
+        function addPet(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('petName').value;
+            const type = document.getElementById('petType').value;
+            const age = document.getElementById('petAge').value;
+            const gender = document.getElementById('petGender').value;
+            
+            const petInfo = document.getElementById('petInfo');
+            const newPetId = Date.now();
+            
+            const typeNames = {
+                'cat': '猫咪',
+                'dog': '狗狗',
+                'bird': '鸟类',
+                'other': '其他'
+            };
+            
+            const genderNames = {
+                'male': '雄性',
+                'female': '雌性'
+            };
+            
+            const petCard = document.createElement('div');
+            petCard.className = 'pet-card';
+            petCard.dataset.petId = newPetId;
+            petCard.innerHTML = `
+                <h3>${name}</h3>
+                <div class="pet-details">
+                    <span>${age}岁 · ${genderNames[gender]}</span>
+                    <span class="pet-type">${typeNames[type]}</span>
+                </div>
+            `;
+            
+            petCard.addEventListener('click', function() {
+                selectPet(this.dataset.petId);
+            });
+            
+            petInfo.appendChild(petCard);
+            closePetModal();
+        }
+
+        function addToHistory(result) {
+            const historyList = document.getElementById('historyList');
+            const selectedPet = document.querySelector('.pet-card.selected h3').textContent;
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN');
+            
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <div>
+                    <strong>${selectedPet} - ${result.text}</strong>
+                    <div class="history-time">${timeString}</div>
+                </div>
+                <div>置信度: ${result.confidence}%</div>
+            `;
+            
+            historyList.insertBefore(historyItem, historyList.firstChild);
+        }
+
+        function playResponse(type) {
+            const responses = {
+                'feeding': '根据分析，您的宠物可能饿了，建议给予适量食物。',
+                'play': '建议与宠物进行互动游戏，有助于缓解焦虑。',
+                'health': '请密切观察宠物状态，如有异常请及时咨询兽医。'
+            };
+            
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(responses[type]);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.8;
+                utterance.pitch = 1;
+                speechSynthesis.speak(utterance);
+            } else {
+                alert(responses[type]);
+            }
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('petModal');
+            if (event.target === modal) {
+                closePetModal();
+            }
+        };
+    </script>
+</body>
+</html>
